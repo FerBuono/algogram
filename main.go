@@ -2,7 +2,6 @@ package main
 
 import (
 	"algogram/errores"
-	TDAHash "algogram/hash"
 	"bufio"
 	"fmt"
 	"os"
@@ -20,15 +19,14 @@ func abrirArchivo(archivo string) *os.File {
 	return file
 }
 
-func guardarUsuarios(usuarios *os.File) TDAHash.Diccionario[string, Usuario] {
-	listaUsuarios := TDAHash.CrearHash[string, Usuario]()
+func guardarUsuarios(usuarios *os.File) ListaUsuarios {
+	listaUsuarios := CrearListaDeUsuarios()
 	id := 0
 	scannerUsuarios := bufio.NewScanner(usuarios)
 	for scannerUsuarios.Scan() {
 		nombre := scannerUsuarios.Text()
-		postsOrdenados := []*Post{}
-		usuario := CrearUsuario(nombre, id, postsOrdenados)
-		listaUsuarios.Guardar(nombre, usuario)
+		usuario := CrearUsuario(nombre, id)
+		listaUsuarios.GuardarUsuario(usuario)
 		id++
 	}
 	return listaUsuarios
@@ -63,16 +61,13 @@ func main() {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-
-			usuario := input[1]
-			if !listaUsuarios.Pertenece(usuario) {
-				newError = new(errores.UsuarioInexistente)
+			usuario := strings.Join(input[1:], " ")
+			usuarioLoggeado, newError = listaUsuarios.BuscarUsuario(usuario)
+			if newError != nil {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			usuarioLoggeado = listaUsuarios.Obtener(usuario)
-			listaPosts.OrdenarPosts(usuarioLoggeado.Uid())
-			fmt.Println("Hola", usuarioLoggeado.LeerUsuario())
+			fmt.Println("Hola", usuarioLoggeado.NombreUsuario())
 
 		case "logout":
 			if usuarioLoggeado == nil {
@@ -92,6 +87,11 @@ func main() {
 			texto := strings.Join(input[1:], " ")
 			post := usuarioLoggeado.CrearPost(texto)
 			listaPosts.GuardarPost(post)
+			for iter := listaUsuarios.Iterador(); iter.HaySiguiente(); {
+				_, usuario := iter.VerActual()
+				usuario.AgregarPost(post)
+				iter.Siguiente()
+			}
 			fmt.Println("Post publicado")
 
 		case "ver_siguiente_feed":
@@ -100,9 +100,9 @@ func main() {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			post, err := listaPosts.VerProximo(usuarioLoggeado.Uid())
-			if err != nil {
-				fmt.Fprintln(os.Stdout, err.Error())
+			post, newError := usuarioLoggeado.VerProximoPost()
+			if newError != nil {
+				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
 			fmt.Println("Post ID", post.id)
@@ -110,15 +110,20 @@ func main() {
 			fmt.Println("Likes:", post.likes.Cantidad())
 
 		case "likear_post":
+			if usuarioLoggeado == nil {
+				newError = new(errores.NoLoggeadoOPostInexistente)
+				fmt.Fprintln(os.Stdout, newError.Error())
+				break
+			}
 			id, err := strconv.Atoi(input[1])
 			if err != nil {
 				newError = new(errores.ErrorParametros)
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			err = listaPosts.LikearPost(id, usuarioLoggeado.LeerUsuario())
-			if err != nil {
-				fmt.Fprintln(os.Stdout, err.Error())
+			newError = listaPosts.LikearPost(id, usuarioLoggeado.NombreUsuario())
+			if newError != nil {
+				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
 			fmt.Println("Post likeado")
@@ -130,18 +135,14 @@ func main() {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			likes, err := listaPosts.MostrarLikes(id)
-			if err != nil {
-				fmt.Fprintln(os.Stdout, err.Error())
+			likes, newError := listaPosts.MostrarLikes(id)
+			if newError != nil || len(likes) == 0 {
+				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			if len(likes) == 1 {
-				fmt.Println("El post tiene", len(likes), "like:")
-			} else {
-				fmt.Println("El post tiene", len(likes), "likes:")
-			}
+			fmt.Println("El post tiene", len(likes), "likes:")
 			for _, usuario := range likes {
-				fmt.Println("\t", usuario)
+				fmt.Printf("\t%s\n", usuario)
 			}
 
 		default:
