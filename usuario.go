@@ -15,7 +15,7 @@ type usuario struct {
 
 type Usuario interface {
 
-	// LeerUsuario devuelve el nombre de usuario
+	// [NombreUsuario] devuelve el nombre de usuario
 	NombreUsuario() string
 
 	// Uid devuelve el id del usuario

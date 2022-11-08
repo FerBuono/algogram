@@ -59,12 +59,12 @@ func (p posts) MostrarLikes(id int) ([]string, error) {
 		newError := new(errores.PostInexistenteOSinLikes)
 		return usuarios, newError
 	}
-
 	post := p.diccPosts.Obtener(id)
 	if post.likes.Cantidad() == 0 {
 		newError := new(errores.PostInexistenteOSinLikes)
 		return usuarios, newError
 	}
+
 	for iter := post.likes.Iterador(); iter.HaySiguiente(); {
 		usuario, _ := iter.VerActual()
 		usuarios = append(usuarios, usuario)
