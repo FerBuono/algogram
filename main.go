@@ -1,6 +1,7 @@
 package main
 
 import (
+	"algogram/app"
 	"algogram/errores"
 	"bufio"
 	"fmt"
@@ -20,9 +21,9 @@ func main() {
 
 	usuarios := abrirArchivo(args[0])
 	listaUsuarios := guardarUsuarios(usuarios)
-	listaPosts := CrearListaDePosts(func(p1, p2 Post) int { return p1.uid - p2.uid })
+	listaPosts := app.CrearListaDePosts()
 
-	var usuarioLoggeado Usuario
+	var usuarioLoggeado app.Usuario
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -44,7 +45,7 @@ func main() {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			fmt.Println("Hola", usuarioLoggeado.NombreUsuario())
+			fmt.Println("Hola", usuario)
 
 		case "logout":
 			if usuarioLoggeado == nil {
@@ -62,13 +63,9 @@ func main() {
 				break
 			}
 			texto := strings.Join(input[1:], " ")
-			post := usuarioLoggeado.CrearPost(texto)
-			listaPosts.GuardarPost(post)
-			for iter := listaUsuarios.Iterador(); iter.HaySiguiente(); {
-				_, usuario := iter.VerActual()
-				usuario.AgregarPost(post)
-				iter.Siguiente()
-			}
+			uid, usuario := usuarioLoggeado.VerUsuario()
+			post := listaPosts.GuardarPost(texto, uid, usuario)
+			listaUsuarios.GuardarPost(post)
 			fmt.Println("Post publicado")
 
 		case "ver_siguiente_feed":
@@ -82,9 +79,10 @@ func main() {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			fmt.Println("Post ID", post.id)
-			fmt.Println(post.usuario, "dijo:", post.texto)
-			fmt.Println("Likes:", post.likes.Cantidad())
+			texto, id, usuario, _ := post.VerPost()
+			fmt.Println("Post ID", id)
+			fmt.Println(usuario, "dijo:", texto)
+			fmt.Println("Likes:", post.Likes())
 
 		case "likear_post":
 			if usuarioLoggeado == nil {
@@ -98,7 +96,8 @@ func main() {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
-			newError = listaPosts.LikearPost(id, usuarioLoggeado.NombreUsuario())
+			_, usuario := usuarioLoggeado.VerUsuario()
+			newError = listaPosts.LikearPost(id, usuario)
 			if newError != nil {
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break

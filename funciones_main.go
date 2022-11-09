@@ -1,6 +1,7 @@
 package main
 
 import (
+	"algogram/app"
 	"algogram/errores"
 	"bufio"
 	"fmt"
@@ -17,14 +18,13 @@ func abrirArchivo(archivo string) *os.File {
 	return file
 }
 
-func guardarUsuarios(usuarios *os.File) ListaUsuarios {
-	listaUsuarios := CrearListaDeUsuarios()
+func guardarUsuarios(usuarios *os.File) app.ListaUsuarios {
+	listaUsuarios := app.CrearListaDeUsuarios()
 	id := 0
 	scannerUsuarios := bufio.NewScanner(usuarios)
 	for scannerUsuarios.Scan() {
 		nombre := scannerUsuarios.Text()
-		usuario := CrearUsuario(nombre, id)
-		listaUsuarios.GuardarUsuario(usuario)
+		listaUsuarios.GuardarUsuario(nombre, id)
 		id++
 	}
 	return listaUsuarios
