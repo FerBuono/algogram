@@ -117,10 +117,6 @@ func App(usuarioLoggeado app.Usuario, listaUsuarios app.ListaUsuarios, listaPost
 		case "ver_siguiente_feed":
 			post, newError := verSiguientePost(usuarioLoggeado)
 			if newError != nil {
-				if newError != nil {
-					fmt.Fprintln(os.Stdout, newError.Error())
-					break
-				}
 				fmt.Fprintln(os.Stdout, newError.Error())
 				break
 			}
